@@ -1,0 +1,41 @@
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# VS Code (if present)
+.vscode/
+
+# Java build outputs
+out/
+target/
+bin/
+build/
+*.class
+
+# Gradle/Maven
+.gradle/
+.mvn/
+!/.mvn/wrapper/maven-wrapper.jar
+
+# Eclipse (if present)
+.project
+.classpath
+.settings/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Qodana local cache (if used)
+.qodana/
+
+# JVM crash logs
+hs_err_pid*
+replay_pid*
+
