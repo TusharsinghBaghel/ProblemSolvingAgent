@@ -5,7 +5,7 @@ import search.Problem;
 import java.util.*;
 
 /**
- * MST-based admissible heuristic for TSP using Kruskal's algorithm.
+ * MST-based admissible heuristic for TSP using Prim's algorithm (dense O(k^2)).
  * h(n) = (if not all visited) min(dist(current, U)) + MST(U) + min(dist(U, start))
  * where U is the set of unvisited cities. If all visited but not at start, h = dist(current,start).
  */
@@ -42,7 +42,7 @@ public class MSTHeuristic implements AStar.Heuristic<TSPState, TSPAction> {
             minToStart = Math.min(minToStart, d[city][start]);
         }
 
-        // Part 3: MST over unvisited cities (Kruskal)
+        // Part 3: MST over unvisited cities (Prim now)
         double mstCost = computeMST(unvisited, d);
 
         return minFromCurrent + mstCost + minToStart;
@@ -50,53 +50,34 @@ public class MSTHeuristic implements AStar.Heuristic<TSPState, TSPAction> {
 
     private double computeMST(List<Integer> nodes, double[][] d) {
         int k = nodes.size();
-        if (k <= 1) return 0; // 0 or 1 node => no edges
+        if (k <= 1) return 0; // no edges needed
 
-        // Map city id to index in MST set for union-find
-        Map<Integer, Integer> indexMap = new HashMap<>();
-        for (int i = 0; i < k; i++) indexMap.put(nodes.get(i), i);
+        boolean[] inTree = new boolean[k];
+        double[] best = new double[k];
+        Arrays.fill(best, Double.POSITIVE_INFINITY);
+        best[0] = 0.0; // start from first node in the subset
 
-        class Edge { int u, v; double w; }
-        List<Edge> edges = new ArrayList<>();
-        for (int i = 0; i < k; i++) {
-            for (int j = i + 1; j < k; j++) {
-                Edge e = new Edge();
-                e.u = i;
-                e.v = j;
-                e.w = d[nodes.get(i)][nodes.get(j)];
-                edges.add(e);
+        double total = 0.0;
+        for (int iter = 0; iter < k; iter++) {
+            int sel = -1;
+            double selVal = Double.POSITIVE_INFINITY;
+            for (int i = 0; i < k; i++) {
+                if (!inTree[i] && best[i] < selVal) {
+                    selVal = best[i];
+                    sel = i;
+                }
             }
-        }
-        edges.sort(Comparator.comparingDouble(e -> e.w));
+            inTree[sel] = true;
+            if (iter > 0) total += selVal; // skip adding the initial 0 key
 
-        // Union-Find
-        int[] parent = new int[k];
-        int[] rank = new int[k];
-        for (int i = 0; i < k; i++) parent[i] = i;
-
-        java.util.function.IntUnaryOperator find = new java.util.function.IntUnaryOperator() {
-            @Override public int applyAsInt(int x) { return parent[x] == x ? x : (parent[x] = applyAsInt(parent[x])); }
-        };
-        java.util.function.BiConsumer<Integer,Integer> union = (a,b) -> {
-            int ra = find.applyAsInt(a);
-            int rb = find.applyAsInt(b);
-            if (ra == rb) return;
-            if (rank[ra] < rank[rb]) parent[ra] = rb; else if (rank[ra] > rank[rb]) parent[rb] = ra; else { parent[rb] = ra; rank[ra]++; }
-        };
-
-        double total = 0;
-        int edgesUsed = 0;
-        for (Edge e : edges) {
-            int ru = find.applyAsInt(e.u);
-            int rv = find.applyAsInt(e.v);
-            if (ru != rv) {
-                union.accept(ru, rv);
-                total += e.w;
-                edgesUsed++;
-                if (edgesUsed == k - 1) break;
+            int uCity = nodes.get(sel);
+            for (int j = 0; j < k; j++) {
+                if (inTree[j]) continue;
+                int vCity = nodes.get(j);
+                double w = d[uCity][vCity];
+                if (w < best[j]) best[j] = w;
             }
         }
         return total;
     }
 }
-
